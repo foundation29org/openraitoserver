@@ -5,6 +5,8 @@ const User = require('../../models/user')
 const Patient = require('../../models/patient')
 const crypt = require('../../services/crypt')
 
+const { client_server } = require('../../config')
+
 function getPatientsUser(req, res) {
     let userId = crypt.decrypt(req.params.userId);
 
@@ -124,11 +126,84 @@ function getAllPatientInfo(req, res) {
     })
 }
 
+function setIndividualShare(req, res) {
+    let patientId = crypt.decrypt(req.params.patientId);
+    Patient.findById(patientId, { "_id": false, "createdBy": false }, (err, patient) => {
+        if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+        if(patient){
+            var found = false;
+            for (var i = 0; i < patient.individualShare.length && !found; i++) {
+                if(patient.individualShare[i].idUser == req.body.idUser){
+                    patient.individualShare[i] = req.body;
+                    found = true;
+                }
+            }
+            if(!found){
+                patient.individualShare.push(req.body)
+                //req.body.token = getUniqueFileName(req.params.patientId)
+            }
+            Patient.findByIdAndUpdate(patientId, { individualShare: patient.individualShare }, { select: '-createdBy', new: true }, (err, patientUpdated) => {
+                if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+                res.status(200).send({ message: 'individual share added' })
+            })
+            
+            
+        }else{
+            res.status(500).send({ message: `Error making the request: ${err}` })
+        }
+    })    
+}
+
+function getIndividualShare(req, res) {
+    console.log(req.body);
+    let patientId = crypt.decrypt(req.params.patientId);
+    Patient.findOne({ 'individualShare.idUser': req.body.idUser, '_id': patientId }, (err, patient) => {
+        console.log(patient);
+        var found =false;
+        var pos = -1;
+        if(patient){
+            for (var i = 0; i < patient.individualShare.length && !found; i++) {
+                if(patient.individualShare[i].idUser == req.body.idUser){
+                    pos = i;
+                    found = true;
+                }
+            }
+        }
+        
+        if(found){
+            res.status(200).send({ individualShare: patient.individualShare[pos]})
+        }else{
+            res.status(200).send({ message: 'not found' })
+        }
+        
+    })
+    /*Patient.findById(patientId, { "_id": false, "createdBy": false }, (err, patient) => {
+        if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+        res.status(200).send({ individualShare: patient.individualShare })
+    })*/
+}
+
+
+function getUniqueFileName(patientId) {
+    var chars = "0123456789abcdefghijklmnopqrstuvwxyz!@$^*()ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var passwordLength = 20;
+    var password = "";
+    for (var i = 0; i <= passwordLength; i++) {
+      var randomNumber = Math.floor(Math.random() * chars.length);
+      password += chars.substring(randomNumber, randomNumber +1);
+     }
+     var url = client_server+'/?key='+patientId+'&token='+password
+     //var url = password
+    return url;
+  }
+
 module.exports = {
     getPatientsUser,
     getPatientsRequest,
     getPatient,
     getAllPatientInfo,
     getGeneralShare,
-    getCustomShare
+    getCustomShare,
+    setIndividualShare,
+    getIndividualShare
 }
