@@ -47,16 +47,25 @@ function getPatientsUser(req, res) {
 function getPatientsRequest(req, res) {
     Patient.find({}, (err, patients) => {
         if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-
+        
         var listpatients = [];
-
         patients.forEach(function (u) {
             var id = u._id.toString();
             var idencrypt = crypt.encrypt(id);
+            var found = false;
+            var status = 'Pending';
+            if(req.params.userId!=undefined){
+                for (var i = 0; i < u.individualShare.length && !found; i++) {
+                    if(u.individualShare[i].idUser == req.params.userId){
+                        found = true;
+                        status = u.individualShare[i].status;
+                    }
+                }
+            }
             if(u.generalShare.data.patientInfo){
-                listpatients.push({ id: idencrypt, patientName: u.patientName, surname: u.surname, birthDate: u.birthDate, gender: u.gender, group: u.group, previousDiagnosis: u.previousDiagnosis, generalShare: u.generalShare });
+                listpatients.push({ id: idencrypt, patientName: u.patientName, surname: u.surname, birthDate: u.birthDate, gender: u.gender, group: u.group, previousDiagnosis: u.previousDiagnosis, generalShare: u.generalShare, hasIndividualShare: found, status: status });
             }else if(u.generalShare.data.patientInfo || u.generalShare.data.medicalInfo || u.generalShare.data.devicesInfo || u.generalShare.data.genomicsInfo){
-                listpatients.push({ id: idencrypt, patientName: null, surname: null, birthDate: null, gender: null, group: u.group, previousDiagnosis: null, generalShare: u.generalShare });
+                listpatients.push({ id: idencrypt, patientName: null, surname: null, birthDate: null, gender: null, group: u.group, previousDiagnosis: null, generalShare: u.generalShare, hasIndividualShare: found, status: status});
             }
             
         });
@@ -72,14 +81,33 @@ function getPatientsRequest(req, res) {
 function getPatient(req, res) {
     let patientId = crypt.decrypt(req.params.patientId);
     console.log(req.body);
-    Patient.findById(patientId, { "_id": false, "createdBy": false }, (err, patient) => {
+    Patient.findById(patientId, { "_id": false, "createdBy": false }, (err, patientdb) => {
         if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-        if (!patient) return res.status(202).send({ message: `The patient does not exist` })
-        if(patient.generalShare.data.patientInfo){
-            res.status(200).send({ patient })
-        }else{
-            res.status(200).send({ message: 'You do not have access', generalShare: patient.generalShare })
+        if (!patientdb) return res.status(202).send({ message: `The patient does not exist` })
+        if(patientdb){
+            var found = false;
+            var pos = -1;
+            for (var i = 0; i < patientdb.individualShare.length && !found; i++) {
+                if(patientdb.individualShare[i].idUser == req.body.idUser && patientdb.individualShare[i].status == 'Accepted'){
+                    found = true;
+                    pos = i;
+                }
+            }
+            
+            var patient = JSON.parse(JSON.stringify(patientdb));
+            if(found){
+                patient.generalShare = patient.individualShare[pos];
+            }
+            delete patient.individualShare;
+            console.log('eliminado:');
+            console.log(patient);
+            if(patient.generalShare.data.patientInfo){
+                res.status(200).send({ patient })
+            }else{
+                res.status(200).send({ message: 'You do not have access', generalShare: patient.generalShare })
+            }
         }
+        
         
     })
 }
@@ -155,10 +183,8 @@ function setIndividualShare(req, res) {
 }
 
 function getIndividualShare(req, res) {
-    console.log(req.body);
     let patientId = crypt.decrypt(req.params.patientId);
     Patient.findOne({ 'individualShare.idUser': req.body.idUser, '_id': patientId }, (err, patient) => {
-        console.log(patient);
         var found =false;
         var pos = -1;
         if(patient){

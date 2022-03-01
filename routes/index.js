@@ -287,7 +287,7 @@ api.post('/openraito/patient/:patientId', auth(roles.OnlyClinical), openRaitoCtr
 api.post('/openraito/patient/all/:patientId', openRaitoCtrl.getAllPatientInfo)
 api.get('/openraito/patient/generalshare/:patientId', auth(roles.UserResearcher), openRaitoCtrl.getGeneralShare)
 api.get('/openraito/patient/cusmtomshare/:patientId', auth(roles.UserResearcher), openRaitoCtrl.getCustomShare)
-api.get('/openraito/patientsrequest', openRaitoCtrl.getPatientsRequest)
+api.get('/openraito/patientsrequest/:userId', openRaitoCtrl.getPatientsRequest)
 api.post('/openraito/patient/individualshare/:patientId', auth(roles.OnlyClinical), openRaitoCtrl.setIndividualShare)
 api.post('/openraito/patient/getindividualshare/:patientId', auth(roles.OnlyClinical), openRaitoCtrl.getIndividualShare)
 /*api.get('/testToken', auth, (req, res) => {
