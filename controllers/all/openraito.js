@@ -64,7 +64,7 @@ function getPatientsRequest(req, res) {
             }
             if(u.generalShare.data.patientInfo){
                 listpatients.push({ id: idencrypt, patientName: u.patientName, surname: u.surname, birthDate: u.birthDate, gender: u.gender, group: u.group, previousDiagnosis: u.previousDiagnosis, generalShare: u.generalShare, hasIndividualShare: found, status: status });
-            }else if(u.generalShare.data.patientInfo || u.generalShare.data.medicalInfo || u.generalShare.data.devicesInfo || u.generalShare.data.genomicsInfo){
+            }else if((u.generalShare.data.patientInfo || u.generalShare.data.medicalInfo || u.generalShare.data.devicesInfo || u.generalShare.data.genomicsInfo) || found){
                 listpatients.push({ id: idencrypt, patientName: null, surname: null, birthDate: null, gender: null, group: u.group, previousDiagnosis: null, generalShare: u.generalShare, hasIndividualShare: found, status: status});
             }
             
@@ -98,9 +98,10 @@ function getPatient(req, res) {
             if(found){
                 patient.generalShare = patient.individualShare[pos];
             }
-            delete patient.individualShare;
-            console.log('eliminado:');
-            console.log(patient);
+            if(patient.individualShare){
+                delete patient.individualShare;
+            }
+            
             if(patient.generalShare.data.patientInfo){
                 res.status(200).send({ patient })
             }else{
@@ -137,13 +138,18 @@ function getAllPatientInfo(req, res) {
             patient.customShare.forEach(function (element) {
                 var splittoken = element.token.split('token=');
                 if(splittoken[1] == req.body.token){
+                    var id = patient._id.toString();
+                    var idencrypt = crypt.encrypt(id);
                     if(element.data.patientInfo){
-                        var id = patient._id.toString();
-                        var idencrypt = crypt.encrypt(id);
                         var data = { id: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, group: patient.group, previousDiagnosis: patient.previousDiagnosis, customShare: element }
                         res.status(200).send({ data })
                     }else{
-                        res.status(200).send({ message: 'You do not have access', customShare: element})
+                        if(element.data.medicalInfo){
+                            var data = { id: idencrypt, patientName: null, surname: null, birthDate: null, gender: null, group: patient.group, previousDiagnosis: null, customShare: element }
+                            res.status(200).send({ data })
+                        }else{
+                            res.status(200).send({ message: 'You do not have access', customShare: element})
+                        }
                     }
                     
                 }
