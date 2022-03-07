@@ -77,10 +77,9 @@ You can consult the documentation on the [architecture of the dx29 project](http
 <p>&nbsp;</p>
 
 
-"
 ### **Acknowledgements**
 
-This repository includes resources from the Human Phenotype Ontology consortium [https://hpo.jax.org/](https://hpo.jax.org/). Refer to the following publication for up-to date information: S. Köhler et al., The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, [https://doi.org/10.1093/nar/gkaa1043](https://doi.org/10.1093/nar/gkaa1043)"				
+This repository includes resources from the Human Phenotype Ontology consortium [https://hpo.jax.org/](https://hpo.jax.org/). Refer to the following publication for up-to date information: S. Köhler et al., The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, [https://doi.org/10.1093/nar/gkaa1043](https://doi.org/10.1093/nar/gkaa1043)			
 ![imagen](https://user-images.githubusercontent.com/12831769/157055860-f584aa32-9dc2-456d-85e8-e66344ccfe71.png)
 
 
