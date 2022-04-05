@@ -901,11 +901,11 @@ function getUserName(req, res) {
 	//añado  {"_id" : false} para que no devuelva el _id
 	User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
 		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-		var result = "Jhon";
 		if (user) {
-			result = user.userName;
+			res.status(200).send({ userName: user.userName, lastName: user.lastName, isUser: req.params.userId })
+		}else{
+			res.status(200).send({ userName: '', lastName: '', isUser: req.params.userId})
 		}
-		res.status(200).send({ userName: result })
 	})
 }
 
@@ -995,9 +995,23 @@ function isVerified(req, res) {
 		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
 		var result = false;
 		if (user) {
-			result = user.verified;
+			result = user.infoVerified;
 		}
-		res.status(200).send({ verified: result })
+		res.status(200).send({ infoVerified: result })
+	})
+}
+
+function setInfoVerified(req, res) {
+
+	let userId = crypt.decrypt(req.params.userId);
+	var infoVerified = req.body.infoVerified;
+	User.findByIdAndUpdate(userId, { infoVerified: infoVerified }, { new: true }, (err, userUpdated) => {
+		if (userUpdated) {
+			res.status(200).send({ message: 'Updated' })
+		} else {
+			console.log(err);
+			res.status(200).send({ message: 'error' })
+		}
 	})
 }
 
@@ -1019,5 +1033,6 @@ module.exports = {
 	getGpt3Permision,
 	setGpt3Permision,
 	setNumCallsGpt3,
-	isVerified
+	isVerified,
+	setInfoVerified
 }

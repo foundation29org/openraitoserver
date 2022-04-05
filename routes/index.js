@@ -80,6 +80,7 @@ api.get('/gpt3/:userId', auth(roles.All), userCtrl.getGpt3Permision)
 api.post('/gpt3/:userId', auth(roles.All), userCtrl.setGpt3Permision)
 api.get('/gpt3/numcalls/:userId', auth(roles.All), userCtrl.setNumCallsGpt3)
 api.get('/verified/:userId', auth(roles.All), userCtrl.isVerified)
+api.post('/verified/:userId', auth(roles.All), userCtrl.setInfoVerified)
 
 //export data
 api.get('/exportdata/:patientId', auth(roles.All), exportCtrl.getData)
