@@ -6,6 +6,7 @@ Dx29 server
 ===============================================================================================================================
 
 [![Build Status](https://f29.visualstudio.com/Health29%20for%20Diagnosis/_apis/build/status/dx29%20-%20dev%20-%20server%20-%20CI?branchName=develop)](https://f29.visualstudio.com/Health29%20for%20Diagnosis/_build/latest?definitionId=44&amp;branchName=develop)   [![Deployment status](https://f29.vsrm.visualstudio.com/_apis/public/Release/badge/88bb841e-8756-480d-9840-a24ba6dd4cb4/14/15)](https://f29.visualstudio.com/Health29%20for%20Diagnosis/_release?_a=releases&view=mine&definitionId=14)
+[![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
 #### 1. Overview 
 
@@ -74,6 +75,12 @@ You can consult the documentation on the [architecture of the dx29 project](http
 
 <p>&nbsp;</p>
 <p>&nbsp;</p>
+
+
+### **Acknowledgements**
+
+This repository includes resources from the Human Phenotype Ontology consortium [https://hpo.jax.org/](https://hpo.jax.org/). Refer to the following publication for up-to date information: S. Köhler et al., The Human Phenotype Ontology in 2021, Nucleic Acids Research, Volume 49, Issue D1, 8 January 2021, Pages D1207–D1217, [https://doi.org/10.1093/nar/gkaa1043](https://doi.org/10.1093/nar/gkaa1043)
+
 
 
 <div style="border-top: 1px solid !important;
