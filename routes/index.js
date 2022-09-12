@@ -6,10 +6,6 @@ const express = require('express')
 const userCtrl = require('../controllers/all/user')
 const langCtrl = require('../controllers/all/lang')
 
-const patientCtrl = require('../controllers/user/patient')
-
-const deleteAccountCtrl = require('../controllers/user/delete')
-
 const f29azureserviceCtrl = require('../services/f29azure')
 
 const supportCtrl = require('../controllers/all/support')
@@ -40,22 +36,11 @@ api.post('/updatepass', userCtrl.updatePass)
 api.post('/newpass', auth(roles.All), userCtrl.newPass)
 
 api.get('/users/:userId', auth(roles.All), userCtrl.getUser)
-api.get('/users/settings/:userId', auth(roles.All), userCtrl.getSettings)
 api.put('/users/:userId', auth(roles.AllLessResearcher), userCtrl.updateUser)
-api.delete('/users/:userId', auth(roles.AllLessResearcher), userCtrl.deleteUser)//de momento no se usa
+//api.delete('/users/:userId', auth(roles.AllLessResearcher), userCtrl.deleteUser)//de momento no se usa
 api.get('/users/name/:userId', auth(roles.All), userCtrl.getUserName)
-api.get('/users/email/:userId', auth(roles.All), userCtrl.getUserEmail)
-api.get('/patient/email/:patientId', auth(roles.All), userCtrl.getPatientEmail)
 api.get('/verified/:userId', auth(roles.All), userCtrl.isVerified)
 api.post('/verified/:userId', auth(roles.All), userCtrl.setInfoVerified)
-
-
-//delete account
-api.post('/deleteaccount/:userId', auth(roles.All), deleteAccountCtrl.deleteAccount)
-
-// patient routes, using the controller patient, this controller has methods
-api.get('/patients-all/:userId', auth(roles.All), patientCtrl.getPatientsUser)
-
 
 // lang routes, using the controller lang, this controller has methods
 api.get('/langs/',  langCtrl.getLangs)

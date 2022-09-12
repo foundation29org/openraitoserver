@@ -808,17 +808,6 @@ function getUser(req, res) {
 	})
 }
 
-function getSettings(req, res) {
-	let userId = crypt.decrypt(req.params.userId);
-	//añado  {"_id" : false} para que no devuelva el _id
-	User.findById(userId, { "userName": false, "lang": false, "email": false, "signupDate": false, "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "randomCodeRecoverPass": false, "dateTimeRecoverPass": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-		if (!user) return res.status(404).send({ code: 208, message: `The user does not exist` })
-
-		res.status(200).send({ user })
-	})
-}
-
 
 /**
  * @api {put} https://health29.org/api/users/:id Update user
@@ -909,38 +898,6 @@ function getUserName(req, res) {
 	})
 }
 
-function getUserEmail(req, res) {
-	let userId = crypt.decrypt(req.params.userId);
-	//añado  {"_id" : false} para que no devuelva el _id
-	User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-		var result = "Jhon";
-		if (user) {
-			result = user.email;
-		}
-		res.status(200).send({ email: result })
-	})
-}
-
-function getPatientEmail(req, res) {
-	let patientId = crypt.decrypt(req.params.patientId);
-	Patient.findById(patientId, (err, patientUpdated) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-		var userId = patientUpdated.createdBy;
-		User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-			if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-			var result = "Jhon";
-			if (user) {
-				result = user.email;
-			}
-			res.status(200).send({ email: result })
-		})
-
-
-	})
-}
-
-
 function isVerified(req, res) {
 	let userId = crypt.decrypt(req.params.userId);
 	//añado  {"_id" : false} para que no devuelva el _id
@@ -976,13 +933,10 @@ module.exports = {
 	signUp,
 	signIn,
 	getUser,
-	getSettings,
 	updateUser,
 	deleteUser,
 	sendEmail,
 	getUserName,
-	getUserEmail,
-	getPatientEmail,
 	isVerified,
 	setInfoVerified
 }
