@@ -19,18 +19,18 @@ var options = {
 
 function sendMailVerifyEmail (email, randomstring, lang, group){
   if(lang=='es'){
-    var subjectlang='Raito - Activa la cuenta';
+    var subjectlang='OpenRaito - Activa la cuenta';
   }else if(lang=='pt'){
-    var subjectlang='Raito - Ative a conta';
+    var subjectlang='OpenRaito - Ative a conta';
   }else if(lang=='de'){
-    var subjectlang='Raito - Aktivieren Sie das Konto';
+    var subjectlang='OpenRaito - Aktivieren Sie das Konto';
   }else if(lang=='nl'){
-    var subjectlang='Raito - Activeer het account';
+    var subjectlang='OpenRaito - Activeer het account';
   }else{
-    var subjectlang='Raito - Activate the account';
+    var subjectlang='OpenRaito - Activate the account';
   }
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://raito29.azurewebsites.net/assets/img/logo-raito.png';
+    var urlImg = 'https://openraito.azurewebsites.net/assets/img/logo-raito.png';
     var maillistbcc = [
       TRANSPORTER_OPTIONS.auth.user
     ];
@@ -67,18 +67,18 @@ function sendMailVerifyEmail (email, randomstring, lang, group){
 
 function sendMailRecoverPass (email, randomstring, lang){
   if(lang=='es'){
-    var subjectlang='Raito - Recuperación de la cuenta';
+    var subjectlang='OpenRaito - Recuperación de la cuenta';
   }else if(lang=='pt'){
-    var subjectlang='Raito - Recuperação de conta';
+    var subjectlang='OpenRaito - Recuperação de conta';
   }else if(lang=='de'){
-    var subjectlang='Raito - Kontowiederherstellung';
+    var subjectlang='OpenRaito - Kontowiederherstellung';
   }else if(lang=='nl'){
-    var subjectlang='Raito - Accountherstel';
+    var subjectlang='OpenRaito - Accountherstel';
   }else{
-    var subjectlang='Raito - Account Recovery';
+    var subjectlang='OpenRaito - Account Recovery';
   }
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://raito29.azurewebsites.net/assets/img/logo-raito.png';
+    var urlImg = 'https://openraito.azurewebsites.net/assets/img/logo-raito.png';
 
     var maillistbcc = [
       TRANSPORTER_OPTIONS.auth.user,
@@ -194,7 +194,7 @@ function sendMailRequestNewTranslation (user, lang, jsonData){
 
 function sendMailSupport (email, lang, role, supportStored){
   const decoded = new Promise((resolve, reject) => {
-    var urlImg = 'https://raito29.azurewebsites.net/assets/img/logo-raito.png';
+    var urlImg = 'https://openraito.azurewebsites.net/assets/img/logo-raito.png';
     var maillistbcc = [
       TRANSPORTER_OPTIONS.auth.user
     ];
@@ -203,7 +203,7 @@ function sendMailSupport (email, lang, role, supportStored){
       to: TRANSPORTER_OPTIONS.auth.user,
       from: TRANSPORTER_OPTIONS.auth.user,
       bcc: maillistbcc,
-      subject: 'Mensaje para soporte de Raito',
+      subject: 'Mensaje para soporte de OpenRaito',
       template: 'mail_support/_es',
       context: {
         email : email,

@@ -400,7 +400,7 @@ function newPass(req, res) {
  * @apiName signUp
  * @apiVersion 1.0.0
  * @apiGroup Account
- * @apiDescription This method allows you to create a user account in Raito
+ * @apiDescription This method allows you to create a user account in OpenRaito
  * @apiExample {js} Example usage:
  *  var passwordsha512 = sha512("fjie76?vDh");
  *  var formValue = { email: "example@ex.com", userName: "Peter", password: passwordsha512, lang: "en", group: "None"};
@@ -463,7 +463,7 @@ function signUp(req, res) {
 		lang: req.body.lang,
 		group: req.body.group,
 		permissions: req.body.permissions,
-		platform: 'Raito'
+		platform: 'OpenRaito'
 	})
 	User.findOne({ 'email': req.body.email }, function (err, user2) {
 		if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
