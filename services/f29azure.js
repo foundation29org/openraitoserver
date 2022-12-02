@@ -63,32 +63,6 @@ async function createContainers(containerName) {
 
 }
 
-async function createContainerIfNotExists() {
-  var listPatients = [];
-  await User.find({ platform: "Raito" }, async (err, users) => {
-    if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-    if (users) {
-      for (var i = 0; i < users.length; i++) {
-        await Patient.find({ createdBy: users[i]._id }, (err, patientsFound) => {
-          if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-          if (patientsFound.length > 0) {
-            for (var j = 0; j < patientsFound.length; j++) {
-              listPatients.push((patientsFound[j]._id).toString())
-            }
-          }
-        })
-      }
-      for (var i = 0; i < listPatients.length; i++) {
-        var containerName = crypt.encrypt(listPatients[i]).substr(1).toString();
-        var result = await createContainers(containerName);
-        if (!result) {
-        }
-
-      }
-    }
-  });
-
-}
 
 async function createBlob(containerName, algorithmName, data, fileName, date) {
   const containerClient = blobServiceClientGenomics.getContainerClient(containerName);
@@ -123,66 +97,11 @@ async function streamToBuffer(readableStream) {
   });
 }
 
-async function seeSharing() {
-  var listPatients = [];
-  await User.find({ platform: "Raito" }, async (err, users) => {
-    if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-    if (users) {
-      for (var i = 0; i < users.length; i++) {
-        await Patient.find({ createdBy: users[i]._id }, (err, patientsFound) => {
-          if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-          if (patientsFound.length > 0) {
-            for (var j = 0; j < patientsFound.length; j++) {
-              listPatients.push(patientsFound[j])
-            }
-          }
-        })
-      }
-      var counbt = 0;
-      for (var i = 0; i < listPatients.length; i++) {
-        if (listPatients[i].sharing != undefined) {
-          var found = false;
-          for (var j = 0; j < listPatients[i].sharing.length; j++) {
-            if (listPatients[i].sharing[j].patientid != undefined) {
-              var tempo = listPatients[i].sharing[j].patientid.toString()
-              var resu2 = crypt.decrypt(tempo);
-              if (resu2 != listPatients[i]._id) {
-                counbt++;
-                found = true;
-                listPatients[i].sharing[j] = null;
-              }
-            }
-
-          }
-          if (found) {
-            var copySharing = [];
-            for (var ik = 0; ik < listPatients[i].sharing.length; ik++) {
-              if (listPatients[i].sharing[ik] != undefined && listPatients[i].sharing[ik] != null) {
-                copySharing.push(listPatients[i].sharing[ik]);
-              }
-            }
-            await Patient.findByIdAndUpdate(listPatients[i]._id, { sharing: copySharing }, { new: true }, (err, patientUpdated) => {
-              if (patientUpdated) {
-              } else {
-              }
-            })
-          }
-        }
-
-
-      }
-    }
-  });
-
-}
-
 
 module.exports = {
   getAzureBlobSasTokenWithContainer,
   deleteContainers,
   createContainers,
-  createContainerIfNotExists,
   createBlob,
-  downloadBlob,
-  seeSharing
+  downloadBlob
 }
