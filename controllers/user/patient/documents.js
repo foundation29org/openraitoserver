@@ -28,6 +28,7 @@ function saveDocument (req, res){
 	eventdb.description = req.body.description;
 	eventdb.url = req.body.url;
 	eventdb.dateDoc = req.body.dateDoc;
+	eventdb.notes = req.body.notes;
 	eventdb.createdBy = patientId
 
 	// when you save, returns an id in eventdbStored to access that document
