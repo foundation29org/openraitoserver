@@ -229,6 +229,25 @@ function getUniqueFileName(patientId) {
     return url;
   }
 
+  function getModules(req, res) {
+
+    let patientId = crypt.decrypt(req.params.patientId);
+    Patient.findById(patientId, { "_id": false}, (err, patient) => {
+        //search the user createdBy in the patient
+        if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+        User.findById(patient.createdBy, (err, user) => {
+            console.log(user)
+            if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+            if(user){
+                res.status(200).send({ modules: user.modules })
+            }else{
+                res.status(200).send({ modules: ["seizures"]})
+            }
+        })
+    })
+}
+
+
 module.exports = {
     getPatientsUser,
     getPatientsRequest,
@@ -237,5 +256,6 @@ module.exports = {
     getGeneralShare,
     getCustomShare,
     setIndividualShare,
-    getIndividualShare
+    getIndividualShare,
+    getModules
 }
