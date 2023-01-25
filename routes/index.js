@@ -74,6 +74,9 @@ api.get('/openraito/patient/cusmtomshare/:patientId', auth(roles.UserResearcher)
 api.get('/openraito/patientsrequest/:userId', openRaitoCtrl.getPatientsRequest)
 api.post('/openraito/patient/individualshare/:patientId', auth(roles.OnlyClinical), openRaitoCtrl.setIndividualShare)
 api.post('/openraito/patient/getindividualshare/:patientId', auth(roles.OnlyClinical), openRaitoCtrl.getIndividualShare)
+
+
+api.get('/openraito/users/modules/:patientId', openRaitoCtrl.getModules)
 /*api.get('/testToken', auth, (req, res) => {
 	res.status(200).send(true)
 })*/

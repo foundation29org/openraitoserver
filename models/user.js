@@ -56,6 +56,7 @@ const UserSchema = Schema({
 	lengthunit: { type: String, required: true, default: 'cm' },
 	blockedaccount: { type: Boolean, default: false },
 	permissions: { type: Object, default: {} },
+	modules: { type: Object, default: ["seizures"] },
 	platform: { type: String, default: '' },
 	infoVerified:{
 		type: InfoVerifiedSchema, default:{
@@ -184,7 +185,7 @@ UserSchema.statics.getAuthenticated = function (email, password, cb) {
 				return cb(null, null, reasons.PASSWORD_INCORRECT);
 			});
 		});
-	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions platform shared');
+	}).select('_id email +password loginAttempts lockUntil confirmed lastLogin role subrole userName lang randomCodeRecoverPass dateTimeRecoverPass group blockedaccount permissions modules platform shared');
 };
 
 module.exports = conndbaccounts.model('User', UserSchema)
