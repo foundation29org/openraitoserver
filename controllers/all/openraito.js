@@ -236,7 +236,6 @@ function getUniqueFileName(patientId) {
         //search the user createdBy in the patient
         if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
         User.findById(patient.createdBy, (err, user) => {
-            console.log(user)
             if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
             if(user){
                 res.status(200).send({ modules: user.modules })
