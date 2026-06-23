@@ -39,8 +39,6 @@ api.get('/users/:userId', auth(roles.All), userCtrl.getUser)
 api.put('/users/:userId', auth(roles.AllLessResearcher), userCtrl.updateUser)
 //api.delete('/users/:userId', auth(roles.AllLessResearcher), userCtrl.deleteUser)//de momento no se usa
 api.get('/users/name/:userId', auth(roles.All), userCtrl.getUserName)
-api.get('/verified/:userId', auth(roles.All), userCtrl.isVerified)
-api.post('/verified/:userId', auth(roles.All), userCtrl.setInfoVerified)
 
 // lang routes, using the controller lang, this controller has methods
 api.get('/langs/',  langCtrl.getLangs)

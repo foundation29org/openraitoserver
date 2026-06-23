@@ -20,13 +20,6 @@ const ParentSchema = Schema({
 	profession: String
 })
 
-const InfoVerifiedSchema = Schema({
-	isVerified: {type: Boolean, default: false},
-	status: { type: String, default: 'Not started' },
-	url: { type: String, default: null },
-	info: {type: Object, default: {}}
-})
-
 const UserSchema = Schema({
 	email: {
 		type: String,
@@ -57,13 +50,7 @@ const UserSchema = Schema({
 	blockedaccount: { type: Boolean, default: false },
 	permissions: { type: Object, default: {} },
 	modules: { type: Object, default: ["seizures"] },
-	platform: { type: String, default: '' },
-	infoVerified:{
-		type: InfoVerifiedSchema, default:{
-			isVerified:false,
-			info: {}
-		}
-	}
+	platform: { type: String, default: '' }
 })
 
 
