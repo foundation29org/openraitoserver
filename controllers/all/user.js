@@ -13,88 +13,55 @@ const crypt = require('../../services/crypt')
 const bcrypt = require('bcryptjs')
 const f29azureService = require("../../services/f29azure")
 
-function activateUser(req, res) {
+async function activateUser(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
-	const user = new User({
-		email: req.body.email,
-		key: req.body.key,
-		confirmed: true
-	})
-	User.findOne({ 'email': req.body.email }, function (err, user2) {
-		if (err) return res.status(500).send({ message: `Error activating account: ${err}` })
+	try {
+		const user2 = await User.findOne({ 'email': req.body.email });
 		if (user2) {
 			if (user2.confirmationCode == req.body.key) {
 				user2.confirmed = true;
 				let update = user2;
 				let userId = user2._id
-				User.findByIdAndUpdate(userId, update, (err, userUpdated) => {
-					if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-					//mirar si el usuario tiene rol User, y está el email en algún programa, si es así, cambiar a el paciente y asignarle createdBy del nuevo usuario, y compartirlo con el clínico que era el createdBy
-					if (userUpdated.role == 'User') {
-						//Programs.find({}, function(err, programs) {
-						//lo he comprobado que funcione
-						Programs.find({ 'requests.email': userUpdated.email }, (err, programs) => {
-							if (programs != undefined) {
-								var foundUserEmail = false;
-								for (var j = 0; j < programs.length && !foundUserEmail; j++) {
-									var program = programs[j];
-									Programs.findById(program._id, (err, programdb) => {
-										if (err) return res.status(500).send({ message: `Error deleting the case: ${err}` })
-										if (programdb) {
+				const userUpdated = await User.findByIdAndUpdate(userId, update);
+				if (userUpdated.role == 'User') {
+					const programs = await Programs.find({ 'requests.email': userUpdated.email });
+					if (programs != undefined) {
+						for (var j = 0; j < programs.length; j++) {
+							var program = programs[j];
+							const programdb = await Programs.findById(program._id);
+							if (programdb) {
+								for (var i = 0; i < programdb.requests.length; i++) {
+									if (programdb.requests[i].email == userUpdated.email) {
+										let userIdCreatedBy = programdb.requests[i].idUser;
+										let decryptUserId = crypt.decrypt(programdb.requests[i].idUser);
+										let patientId = crypt.decrypt(programdb.requests[i].patientId);
+										var newUserId = userUpdated._id;
 
-											for (var i = 0; i < programdb.requests.length && !foundUserEmail; i++) {
-												if (programdb.requests[i].email == userUpdated.email) {
-													foundUserEmail = true;
-													//update createdBy of patient
-													let userIdCreatedBy = programdb.requests[i].idUser;
-													let decryptUserId = crypt.decrypt(programdb.requests[i].idUser);
-													let patientId = crypt.decrypt(programdb.requests[i].patientId);
-													var newUserId = userUpdated._id;
-
-													User.findById(decryptUserId, (err, clinicalUser) => {
-														if (clinicalUser) {
-															Patient.findByIdAndUpdate(patientId, { createdBy: newUserId }, { new: true }, (err, patientUpdated) => {
-																if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-
-																//update sharing, for clinician
-																var date = Date.now();
-																var permissions = { "shareEmr": true, "askFirst": false, "shareWithAll": false };
-																patientUpdated.sharing.push({ _id: userIdCreatedBy, state: '', role: 'Clinical', email: clinicalUser.email, permissions: permissions, invitedby: userIdCreatedBy, patientName: patientUpdated.patientName, date: date, showSwalIntro: true });
-																Patient.findByIdAndUpdate(patientId, { sharing: patientUpdated.sharing }, { new: true }, (err, patientUpdated) => {
-																	//enviar un email avisando?
-																})
-
-
-															})
-														}
-													});
-
-												}
-											}
-											if (!foundUserEmail) {
-
-
-											}
-										} else {
-											return res.status(200).send({ message: 'program not found' })
+										const clinicalUser = await User.findById(decryptUserId);
+										if (clinicalUser) {
+											const patientUpdated = await Patient.findByIdAndUpdate(patientId, { createdBy: newUserId }, { new: true });
+											var date = Date.now();
+											var permissions = { "shareEmr": true, "askFirst": false, "shareWithAll": false };
+											patientUpdated.sharing.push({ _id: userIdCreatedBy, state: '', role: 'Clinical', email: clinicalUser.email, permissions: permissions, invitedby: userIdCreatedBy, patientName: patientUpdated.patientName, date: date, showSwalIntro: true });
+											await Patient.findByIdAndUpdate(patientId, { sharing: patientUpdated.sharing }, { new: true });
 										}
-									})
+										break;
+									}
 								}
 							}
-						});
-
-
+						}
 					}
-
-					res.status(200).send({ message: 'activated' })
-				})
+				}
+				res.status(200).send({ message: 'activated' })
 			} else {
 				return res.status(200).send({ message: 'error' })
 			}
 		} else {
-			return res.status(500).send({ message: `user not exists: ${err}` })
+			return res.status(500).send({ message: `user not exists` })
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error activating account: ${err}` })
+	}
 }
 
 
@@ -138,41 +105,35 @@ function activateUser(req, res) {
  * * user not exists
  * * account not activated
  */
-function recoverPass(req, res) {
+async function recoverPass(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
 	console.log(req.body.email);
-	User.findOne({ 'email': req.body.email }, function (err, user) {
-		if (err) return res.status(500).send({ message: 'Error searching the user' })
+	try {
+		const user = await User.findOne({ 'email': req.body.email });
 		if (user) {
 			console.log(user.confirmed);
 			if (user.confirmed) {
-				//generamos una clave aleatoria y añadimos un campo con la hora de la clave proporcionada, cada que caduque a los 15 minutos
 				let randomstring = Math.random().toString(36).slice(-12)
 				user.randomCodeRecoverPass = randomstring;
 				user.dateTimeRecoverPass = Date.now();
 
-				//guardamos los valores en BD y enviamos Email
-				User.findByIdAndUpdate(user._id, user, (err, userUpdated) => {
-					if (err) return res.status(500).send({ message: 'Error saving the user' })
+				await User.findByIdAndUpdate(user._id, user);
 
-					serviceEmail.sendMailRecoverPass(req.body.email, randomstring, user.lang)
-						.then(response => {
-							return res.status(200).send({ message: 'Email sent' })
-						})
-						.catch(response => {
-							//create user, but Failed sending email.
-							//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-							res.status(500).send({ message: 'Fail sending email' })
-						})
-					//return res.status(200).send({ token: serviceAuth.createToken(user)})
-				})
+				try {
+					await serviceEmail.sendMailRecoverPass(req.body.email, randomstring, user.lang)
+					return res.status(200).send({ message: 'Email sent' })
+				} catch (response) {
+					res.status(500).send({ message: 'Fail sending email' })
+				}
 			} else {
 				return res.status(500).send({ message: 'account not activated' })
 			}
 		} else {
 			return res.status(500).send({ message: 'user not exists' })
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: 'Error searching the user' })
+	}
 }
 
 /**
@@ -223,44 +184,34 @@ function recoverPass(req, res) {
  * * Error saving the pass
 
  */
-function updatePass(req, res) {
-	const user0 = new User({
-		password: req.body.password
-	})
+async function updatePass(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
-	User.findOne({ 'email': req.body.email }, function (err, user) {
-		if (err) return res.status(500).send({ message: 'Error searching the user' })
+	try {
+		const user = await User.findOne({ 'email': req.body.email });
 		if (user) {
 			const userToSave = user;
 			userToSave.password = req.body.password
-			//ver si el enlace a caducado, les damos 15 minutos para reestablecer la pass
-			var limittime = new Date(); // just for example, can be any other time
-			var myTimeSpan = 15 * 60 * 1000; // 15 minutes in milliseconds
+			var limittime = new Date();
+			var myTimeSpan = 15 * 60 * 1000;
 			limittime.setTime(limittime.getTime() - myTimeSpan);
-
-			//var limittime = moment().subtract(15, 'minutes').unix();
 
 			if (limittime.getTime() < userToSave.dateTimeRecoverPass.getTime()) {
 				if (userToSave.randomCodeRecoverPass == req.body.randomCodeRecoverPass) {
-
-
 					bcrypt.genSalt(10, (err, salt) => {
 						if (err) return res.status(500).send({ message: 'error salt' })
-						bcrypt.hash(userToSave.password, salt, (err, hash) => {
+						bcrypt.hash(userToSave.password, salt, async (err, hash) => {
 							if (err) return res.status(500).send({ message: 'error hash' })
 
 							userToSave.password = hash
-							User.findByIdAndUpdate(userToSave._id, userToSave, (err, userUpdated) => {
-								if (err) return res.status(500).send({ message: 'Error saving the pass' })
+							try {
+								const userUpdated = await User.findByIdAndUpdate(userToSave._id, userToSave);
 								if (!userUpdated) return res.status(500).send({ message: 'not found' })
-
 								return res.status(200).send({ message: 'password changed' })
-							})
+							} catch (updateErr) {
+								return res.status(500).send({ message: 'Error saving the pass' })
+							}
 						})
 					})
-
-
-
 				} else {
 					return res.status(500).send({ message: 'invalid link' })
 				}
@@ -268,10 +219,11 @@ function updatePass(req, res) {
 				return res.status(500).send({ message: 'link expired' })
 			}
 		} else {
-			//return res.status(500).send({ message: 'user not exists'})
 			return res.status(500).send({ message: 'invalid link' })
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: 'Error searching the user' })
+	}
 }
 
 /**
@@ -336,16 +288,17 @@ function newPass(req, res) {
 		if (userToUpdate) {
 			bcrypt.genSalt(10, (err, salt) => {
 				if (err) return res.status(500).send({ message: 'error salt' })
-				bcrypt.hash(req.body.newpassword, salt, (err, hash) => {
+				bcrypt.hash(req.body.newpassword, salt, async (err, hash) => {
 					if (err) return res.status(500).send({ message: 'error hash' })
 
 					userToUpdate.password = hash
-					User.findByIdAndUpdate(userToUpdate._id, userToUpdate, (err, userUpdated) => {
-						if (err) return res.status(500).send({ message: 'Error saving the pass' })
+					try {
+						const userUpdated = await User.findByIdAndUpdate(userToUpdate._id, userToUpdate);
 						if (!userUpdated) return res.status(500).send({ message: 'not found' })
-
 						return res.status(200).send({ message: 'password changed' })
-					})
+					} catch (updateErr) {
+						return res.status(500).send({ message: 'Error saving the pass' })
+					}
 				})
 			})
 		} else {
@@ -449,7 +402,7 @@ function newPass(req, res) {
  */
 
 
-function signUp(req, res) {
+async function signUp(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
 	let randomstring = Math.random().toString(36).slice(-12);
 	const user = new User({
@@ -465,75 +418,57 @@ function signUp(req, res) {
 		permissions: req.body.permissions,
 		platform: 'OpenRaito'
 	})
-	User.findOne({ 'email': req.body.email }, function (err, user2) {
-		if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
+	try {
+		const user2 = await User.findOne({ 'email': req.body.email });
 		if (!user2) {
-			user.save((err, userSaved) => {
-				if (err) return res.status(500).send({ message: `Error creating the user: ${err}` })
+			const userSaved = await user.save();
 
-				if (req.body.patientId != undefined) {
-					var tempo = req.body.patientId
-					let patientIdt = crypt.decrypt(tempo)
-					//let patientId= crypt.decrypt(req.params.patientId);
-
-					Patient.findById(patientIdt, { "createdBy": false }, (err, patient) => {
-						if (err) {
-							console.log('falla');
-							console.log(err)
-						}
-						if (patient) {
-							var id = userSaved._id.toString();
-							var userId = crypt.encrypt(id);
-							//mirar si ya está compartido
-							var found = false;
-							for (var i = 0; i < patient.sharing.length && !found; i++) {
-								if (patient.sharing[i]._id == userId) {
-									found = true;
-								}
+			if (req.body.patientId != undefined) {
+				var tempo = req.body.patientId
+				let patientIdt = crypt.decrypt(tempo)
+				try {
+					const patient = await Patient.findById(patientIdt, { "createdBy": false });
+					if (patient) {
+						var id = userSaved._id.toString();
+						var userId = crypt.encrypt(id);
+						var found = false;
+						for (var i = 0; i < patient.sharing.length && !found; i++) {
+							if (patient.sharing[i]._id == userId) {
+								found = true;
 							}
-							if (!found) {
-								patient.sharing.push({ _id: userId });
-								Patient.findByIdAndUpdate(patientIdt, { sharing: patient.sharing }, { new: true }, (err, patientUpdated) => {
-									if (err) {
-										console.log(err);
-									}
-									if (patientUpdated) {
-										//console.log(patientUpdated);
-									}
-								})
-							}
-
 						}
-					})
+						if (!found) {
+							patient.sharing.push({ _id: userId });
+							await Patient.findByIdAndUpdate(patientIdt, { sharing: patient.sharing }, { new: true });
+						}
+					}
+				} catch (patientErr) {
+					console.log('falla');
+					console.log(patientErr)
 				}
+			}
 
-				//Create the patient
-				console.log(req.body.role);
-				if (req.body.role == 'User') {
-					var userId = userSaved._id.toString();
-					savePatient(userId, req);
-				}
+			console.log(req.body.role);
+			if (req.body.role == 'User') {
+				var userId = userSaved._id.toString();
+				savePatient(userId, req);
+			}
 
-
-
-				serviceEmail.sendMailVerifyEmail(req.body.email, randomstring, req.body.lang, req.body.group)
-					.then(response => {
-						res.status(200).send({ message: 'Account created' })
-					})
-					.catch(response => {
-						//create user, but Failed sending email.
-						//res.status(200).send({ token: serviceAuth.createToken(user),  message: 'Fail sending email'})
-						res.status(200).send({ message: 'Fail sending email' })
-					})
-				//return res.status(200).send({ token: serviceAuth.createToken(user)})
-			})
+			try {
+				await serviceEmail.sendMailVerifyEmail(req.body.email, randomstring, req.body.lang, req.body.group)
+				res.status(200).send({ message: 'Account created' })
+			} catch (response) {
+				res.status(200).send({ message: 'Fail sending email' })
+			}
 		} else {
 			return res.status(202).send({ message: 'user exists' })
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error creating the user: ${err}` })
+	}
 }
 
-function savePatient(userId, req) {
+async function savePatient(userId, req) {
 	let patient = new Patient()
 	patient.patientName = ''
 	patient.surname = ''
@@ -566,9 +501,8 @@ function savePatient(userId, req) {
 			}
 		}
 	}
-	// when you save, returns an id in patientStored to access that patient
-	patient.save(async (err, patientStored) => {
-		if (err) console.log({ message: `Failed to save in the database: ${err} ` })
+	try {
+		const patientStored = await patient.save();
 		var id = patientStored._id.toString();
 		var idencrypt = crypt.encrypt(id);
 		var patientInfo = { sub: idencrypt, patientName: patient.patientName, surname: patient.surname, birthDate: patient.birthDate, gender: patient.gender, country: patient.country, previousDiagnosis: patient.previousDiagnosis, avatar: patient.avatar, consentgroup: patient.consentgroup };
@@ -576,42 +510,40 @@ function savePatient(userId, req) {
 		var result = await f29azureService.createContainers(containerName);
 		if (result) {
 			console.log('Patient created' + patientInfo);
-			//res.status(200).send({message: 'Patient created', patientInfo})
 		} else {
 			deletePatientAndCreateOther(patientStored._id, req, userId);
 		}
-
-	})
+	} catch (err) {
+		console.log({ message: `Failed to save in the database: ${err} ` })
+	}
 }
 
-function deletePatientAndCreateOther(patientId, req, userId) {
-
-	Patient.findById(patientId, (err, patient) => {
-		if (err) return console.log({ message: `Error deleting the patient: ${err}` })
+async function deletePatientAndCreateOther(patientId, req, userId) {
+	try {
+		const patient = await Patient.findById(patientId);
 		if (patient) {
-			patient.deleteOne(err => {
-				savePatient(userId, req)
-			})
-		} else {
-			savePatient(userId, req)
+			await patient.deleteOne();
 		}
-	})
+		savePatient(userId, req)
+	} catch (err) {
+		console.log({ message: `Error deleting the patient: ${err}` })
+		savePatient(userId, req)
+	}
 }
 
-function sendEmail(req, res) {
+async function sendEmail(req, res) {
 	req.body.email = (req.body.email).toLowerCase();
 	let randomstring = Math.random().toString(36).slice(-12);
-	User.findOne({ 'email': req.body.email }, function (err, user) {
-		if (err) return res.status(500).send({ message: `Error finding the user: ${err}` })
+	try {
+		const user = await User.findOne({ 'email': req.body.email });
 		if (user) {
 			if (req.body.type == "resendEmail") {
-				serviceEmail.sendMailVerifyEmail(req.body.email, randomstring, req.body.lang, user.group)
-					.then(response => {
-						res.status(200).send({ message: 'Email resent' })
-					})
-					.catch(response => {
-						res.status(200).send({ message: 'Fail sending email' })
-					})
+				try {
+					await serviceEmail.sendMailVerifyEmail(req.body.email, randomstring, req.body.lang, user.group)
+					res.status(200).send({ message: 'Email resent' })
+				} catch (response) {
+					res.status(200).send({ message: 'Fail sending email' })
+				}
 			}
 			else if (req.body.type == "contactSupport") {
 				let support = new Support()
@@ -620,19 +552,17 @@ function sendEmail(req, res) {
 				support.description = 'Please, help me with my account activation. I did not receive any confirmation email.'
 				support.files = []
 				support.createdBy = user.userId
-				serviceEmail.sendMailSupport(req.body.email, req.body.lang, null, support)
-					.then(response => {
-						res.status(200).send({ message: 'Support contacted' })
-					})
-					.catch(response => {
-						res.status(200).send({ message: 'Fail sending email' })
-					})
+				try {
+					await serviceEmail.sendMailSupport(req.body.email, req.body.lang, null, support)
+					res.status(200).send({ message: 'Support contacted' })
+				} catch (response) {
+					res.status(200).send({ message: 'Fail sending email' })
+				}
 			}
-
-
-
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error finding the user: ${err}` })
+	}
 }
 /**
  * @api {post} https://health29.org/api/api/signin Get the token (and the userId)
@@ -797,15 +727,15 @@ function signIn(req, res) {
  *
  */
 
-function getUser(req, res) {
+async function getUser(req, res) {
 	let userId = crypt.decrypt(req.params.userId);
-	//añado  {"_id" : false} para que no devuelva el _id
-	User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+	try {
+		const user = await User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false });
 		if (!user) return res.status(404).send({ code: 208, message: `The user does not exist` })
-
 		res.status(200).send({ user })
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error making the request: ${err}` })
+	}
 }
 
 
@@ -856,46 +786,45 @@ function getUser(req, res) {
  *
  */
 
-function updateUser(req, res) {
+async function updateUser(req, res) {
 	let userId = crypt.decrypt(req.params.userId);
 	let update = req.body
-
-	User.findByIdAndUpdate(userId, update, { select: '-_id userName lastName lang email signupDate massunit lengthunit', new: true }, (err, userUpdated) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
-
+	try {
+		const userUpdated = await User.findByIdAndUpdate(userId, update, { select: '-_id userName lastName lang email signupDate massunit lengthunit', new: true });
 		res.status(200).send({ user: userUpdated })
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error making the request: ${err}` })
+	}
 }
 
-function deleteUser(req, res) {
+async function deleteUser(req, res) {
 	let userId = req.params.userId
-
-	User.findById(userId, (err, user) => {
-		if (err) return res.status(500).send({ message: `Error deleting the user: ${err}` })
+	try {
+		const user = await User.findById(userId);
 		if (user) {
-			user.deleteOne(err => {
-				if (err) return res.status(500).send({ message: `Error deleting the user: ${err}` })
-				res.status(200).send({ message: `The user has been deleted.` })
-			})
+			await user.deleteOne();
+			res.status(200).send({ message: `The user has been deleted.` })
 		} else {
-			return res.status(404).send({ code: 208, message: `Error deleting the user: ${err}` })
+			return res.status(404).send({ code: 208, message: `Error deleting the user` })
 		}
-
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error deleting the user: ${err}` })
+	}
 }
 
 
-function getUserName(req, res) {
+async function getUserName(req, res) {
 	let userId = crypt.decrypt(req.params.userId);
-	//añado  {"_id" : false} para que no devuelva el _id
-	User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false }, (err, user) => {
-		if (err) return res.status(500).send({ message: `Error making the request: ${err}` })
+	try {
+		const user = await User.findById(userId, { "_id": false, "password": false, "__v": false, "confirmationCode": false, "loginAttempts": false, "confirmed": false, "role": false, "lastLogin": false });
 		if (user) {
 			res.status(200).send({ userName: user.userName, lastName: user.lastName, idUser: req.params.userId })
 		}else{
 			res.status(200).send({ userName: '', lastName: '', idUser: req.params.userId})
 		}
-	})
+	} catch (err) {
+		return res.status(500).send({ message: `Error making the request: ${err}` })
+	}
 }
 
 module.exports = {
