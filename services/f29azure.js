@@ -1,8 +1,6 @@
 'use strict'
 
-const crypt = require('./crypt')
 const config = require('../config')
-const request = require('request')
 const storage = require("@azure/storage-blob")
 const accountnameGenomics = config.nameBlob;
 const keyGenomics = config.keyGenomics;
@@ -12,15 +10,6 @@ const blobServiceClientGenomics = new storage.BlobServiceClient(
   `https://${accountnameGenomics}.blob.core.windows.net`,
   sharedKeyCredentialGenomics
 );
-
-var azure = require('azure-storage');
-
-const User = require('../models/user')
-const Patient = require('../models/patient')
-
-var blobService = azure
-  .createBlobService(config.nameBlob, keyGenomics);
-
 
 function getAzureBlobSasTokenWithContainer(req, res) {
   var containerName = req.params.containerName;
