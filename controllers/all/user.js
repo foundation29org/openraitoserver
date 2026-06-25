@@ -589,7 +589,7 @@ function deletePatientAndCreateOther(patientId, req, userId) {
 	Patient.findById(patientId, (err, patient) => {
 		if (err) return console.log({ message: `Error deleting the patient: ${err}` })
 		if (patient) {
-			patient.remove(err => {
+			patient.deleteOne(err => {
 				savePatient(userId, req)
 			})
 		} else {
@@ -873,7 +873,7 @@ function deleteUser(req, res) {
 	User.findById(userId, (err, user) => {
 		if (err) return res.status(500).send({ message: `Error deleting the user: ${err}` })
 		if (user) {
-			user.remove(err => {
+			user.deleteOne(err => {
 				if (err) return res.status(500).send({ message: `Error deleting the user: ${err}` })
 				res.status(200).send({ message: `The user has been deleted.` })
 			})

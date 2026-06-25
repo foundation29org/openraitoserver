@@ -13,15 +13,6 @@ const blobServiceClientGenomics = new storage.BlobServiceClient(
   sharedKeyCredentialGenomics
 );
 
-var azure = require('azure-storage');
-
-const User = require('../models/user')
-const Patient = require('../models/patient')
-
-var blobService = azure
-  .createBlobService(config.nameBlob, keyGenomics);
-
-
 function getAzureBlobSasTokenWithContainer(req, res) {
   var containerName = req.params.containerName;
   var category = config.translationCategory;
